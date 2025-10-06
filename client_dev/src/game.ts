@@ -502,10 +502,57 @@ function updateLeaderboard(leaderboard: any[], playerHeadId: string): void {
 
 // ---- Main update -------------------------------------------------------------
 
+export function returnToStartupScreen() {
+    // Close the websocket connection
+    if (GameState.socket) {
+        GameState.socket.close();
+        GameState.socket = null;
+    }
+    
+    // Reset game state
+    GameState.mySnakeId = -1;
+    GameState.mySnakeH = null;
+    GameState.prevData = null;
+    GameState.firstServerTimestamp = 0;
+    GameState.gameStart = 0;
+    GameState.gameUpdates = [];
+    
+    // Clear game objects
+    GameState.gameObjects.units = {};
+    GameState.gameObjects.dynamics = {};
+    GameState.gameObjects.statics = {};
+    
+    // Hide game screen and show startup screen
+    (document.getElementById("app") as HTMLElement).style.display = "none";
+    (document.getElementById("startup") as HTMLElement).style.display = "block";
+    
+    // Clear the name input for a fresh start
+    const nameInput = document.getElementById("fname") as HTMLInputElement;
+    if (nameInput) {
+        nameInput.value = "";
+    }
+    
+    // Reset start button state
+    const startButton = document.getElementById("bstart") as HTMLButtonElement;
+    if (startButton) {
+        startButton.disabled = true;
+        startButton.style.opacity = "0.5";
+    }
+    
+    console.log("Returned to startup screen");
+}
+
 function onUpdate(pid: number, data: any, totalSnakes: number = 0, leaderboard: any[] = [], playerRank: number = 0){
     GameState.prevData = data;
     let networkObject, id;
     let fadeSpeed = 0.1;
+
+    // Check if player's snake is still alive
+    if (GameState.mySnakeId !== -1 && !data.units.hasOwnProperty(GameState.mySnakeId.toString())) {
+        console.log("Player snake died, returning to startup screen");
+        returnToStartupScreen();
+        return;
+    }
 
     //MATCH SERVER COLORS
     let COLORS =  [
@@ -1076,7 +1123,8 @@ async function setupGraphic() {
     bg.width = GameState.mapWH;//PIXIApp.screen.width;
     bg.height = GameState.mapWH;//PIXIApp.screen.height;
     // Tint it to whatever color you want, here red
-    bg.tint = 0x111111;
+    // bg.tint = 0x111111;
+    bg.alpha = 0;
     // Add a click handler
     bg.interactive = true;
     bg.on('pointerdown', function (event) {
@@ -1119,17 +1167,16 @@ async function setupGraphic() {
             GameState.INPUT = [ox, oy, GameState.mDown];
         }
     });
-    // Add it to the stage as the first object
+    // Add tiled background first (behind everything)
+    GameState.PIXITiledBK = new TilingSprite({ texture: bkTexture, width: GameState.mapWH, height: GameState.mapWH });
+    GameState.PIXITiledBK.position.set(-GameState.mapWH / 2, -GameState.mapWH / 2);
+    GameState.PIXITiledBK.zIndex = -1; // Make sure it's behind everything
+    GameState.PIXICam.addChild(GameState.PIXITiledBK);
+
+    // Add transparent background sprite on top for input handling
     //PIXIApp.stage.addChild(bg);
     GameState.PIXICam.addChild(bg);
     //PIXI_Viewport.addChild(bg)
-
-
-
-    //const tilingSprite = new PIXI.TilingSprite(texture_bk, MapWH, MapWH);
-    GameState.PIXITiledBK = new TilingSprite(bkTexture, GameState.ViewW, GameState.ViewH);
-    GameState.PIXITiledBK.position.set(0, 0);
-    GameState.PIXICam.addChild(GameState.PIXITiledBK);
 
     GameState.PIXIGfx = new Graphics();
     GameState.PIXIGfx.lineStyle(50, 0xFF0000).circle(GameState.mapWH / 2, GameState.mapWH / 2, GameState.mapWH / 2).stroke(0xFF0000)
@@ -1250,7 +1297,7 @@ async function setupGraphic() {
 }
 
 export async function gameStart() {
-    await setupGraphic();
     await initAssets();
+    await setupGraphic();
     setupWebsocket(onUpdate);
 }

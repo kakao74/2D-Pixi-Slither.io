@@ -177,6 +177,14 @@ export function setupWebsocket(onUpdate: (id: number, view: any, totalSnakes?: n
 
     GameState.socket.onclose = (event: any) => {
         console.log('WebSocket closed:', event);
+        // If we're in the game and the connection closes, return to startup
+        if (GameState.mySnakeId !== -1) {
+            console.log("Connection lost during game, returning to startup screen");
+            // Import the returnToStartupScreen function dynamically to avoid circular imports
+            import('./game').then(({ returnToStartupScreen }) => {
+                returnToStartupScreen();
+            });
+        }
     };
 
     GameState.socket.onmessage = async (event: any) => {

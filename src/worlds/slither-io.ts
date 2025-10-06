@@ -74,18 +74,38 @@ class SlitherWorld extends IOWorld {
     //------------------------------------------------------------------------------------------------------------------
     DeathFood(parts: any[]): void {
         let f = Object.keys(this.CD.GetAllObjs("dynamic")).length;
-        if (f < this.food_limit + parts.length) {//better optimized (one food amount check)
-            for (let i = 0; i < parts.length; i += 2) {
-                let c = parts[i].color;//this.RandInt(this.SM.colors.length - 1);//Index only needed
-                let x = parts[i].x; let y = parts[i].y;
-                let rad = this.RandInt(10) + 20;//standard food = 68 radius
+        console.log(`DeathFood called with ${parts.length} parts, current food count: ${f}, limit: ${this.food_limit}`);
+        
+        // Create food for every segment, but limit total food count
+        if (f < this.food_limit) {
+            let foodCreated = 0;
+            for (let i = 0; i < parts.length; i++) { // Changed from i += 2 to i++ to include all segments
+                let c = parts[i].color;
+                let x = parts[i].x; 
+                let y = parts[i].y;
+                let rad = this.RandInt(10) + 20; // standard food radius
+                
+                // Check if position is within world bounds (within the circular world)
                 if (this.CD.CircleCollision(x, y, rad, this.w / 2, this.h / 2, this.w / 2) === true) {
                     let d = this.CreateDynamic(1, x, y, 0, 0, rad * 2, rad * 2, rad, this.RandInt(10) + 20, c);
-                    (d as any).origin_x = x; (d as any).origin_y = y;
+                    (d as any).origin_x = x; 
+                    (d as any).origin_y = y;
+                    foodCreated++;
+                } else {
+                    console.log(`Food at (${x}, ${y}) is outside world bounds`);
+                }
+                
+                // Stop if we've reached the food limit
+                f++;
+                if (f >= this.food_limit) {
+                    console.log(`Reached food limit, stopping at segment ${i}`);
+                    break;
                 }
             }
+            console.log(`Created ${foodCreated} food items from ${parts.length} segments`);
+        } else {
+            console.log(`Food limit reached (${f}/${this.food_limit}), not creating more food`);
         }
-
     }
     //------------------------------------------------------------------------------------------------------------------
     //------------------------------------------------------------------------------------------------------------------
@@ -128,7 +148,7 @@ class SlitherWorld extends IOWorld {
     }
     
     // Get total number of snake heads in the entire world
-    GetTotalSnakeCount(): number {
+    override GetTotalSnakeCount(): number {
         return this.SnakeHeads();
     }
     //------------------------------------------------------------------------------------------------------------------

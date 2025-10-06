@@ -304,7 +304,15 @@ class IOSnakeManager {
     }
 
     DoDeath(obj: UnitObject) {
-        this.world.DeathFood(obj.parts);
+        // Debug: Log snake death info
+        console.log(`Snake ${obj.id} died with ${obj.parts ? obj.parts.length : 0} parts`);
+        
+        if (obj.parts && obj.parts.length > 0) {
+            this.world.DeathFood(obj.parts);
+        } else {
+            console.log(`Warning: Snake ${obj.id} has no parts to create food from`);
+        }
+        
         for (let i = 0; i < obj.parts.length; i++) {
             obj.parts[i].remove = 1;
         }
