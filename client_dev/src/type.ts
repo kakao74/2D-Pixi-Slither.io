@@ -32,4 +32,5 @@ export interface DecodedUnit {
   segmentIndex: number // 0 for head, 1+ for body segments
   prevUnitId: number // -1 if none
   name: string // player name
+  spacing: number // spacing between segments
 }

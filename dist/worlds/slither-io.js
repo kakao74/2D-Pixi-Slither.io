@@ -43,7 +43,7 @@ class SlitherWorld extends world_1.default {
             tx = this.RandInt(this.w);
             ty = this.RandInt(this.h);
         }
-        d.uid = this.SM.CreateSnake(0, x, y, 50, d.name || "Player", tx, ty);
+        d.uid = this.SM.CreateSnake(0, x, y, 10, d.name || "Player", tx, ty);
         let unit = this.GetUnit(d.uid);
         if (unit) {
             unit.tx = tx;
@@ -108,7 +108,7 @@ class SlitherWorld extends world_1.default {
                 // Set random target for AI snake
                 let aiTx = this.RandInt(this.w);
                 let aiTy = this.RandInt(this.h);
-                this.SM.CreateSnake(1, x, y, 5, "Player-" + Math.floor(Math.random() * 9000 + 1000), aiTx, aiTy);
+                this.SM.CreateSnake(1, x, y, 10, "Player-" + Math.floor(Math.random() * 9000 + 1000), aiTx, aiTy);
             }
             //console.log(s)
         }
@@ -126,6 +126,10 @@ class SlitherWorld extends world_1.default {
             //console.log(d)
         }
         return count;
+    }
+    // Get total number of snake heads in the entire world
+    GetTotalSnakeCount() {
+        return this.SnakeHeads();
     }
     //------------------------------------------------------------------------------------------------------------------
     //------------------------------------------------------------------------------------------------------------------

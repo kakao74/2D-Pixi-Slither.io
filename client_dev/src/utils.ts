@@ -68,6 +68,7 @@ export function decodeNetworkUnit(unit: UnitTuple): DecodedUnit {
     segmentIndex, // Server now sends segmentIndex instead of brightness for better performance
     prevUnitId,
     name, // Player name
+    spacing, // Spacing between segments
   ] = unit
 
   return {
@@ -90,6 +91,7 @@ export function decodeNetworkUnit(unit: UnitTuple): DecodedUnit {
     segmentIndex,
     prevUnitId,
     name: typeof name === 'string' ? name : '',
+    spacing: typeof spacing === 'number' ? spacing : 0,
   }
 }
 

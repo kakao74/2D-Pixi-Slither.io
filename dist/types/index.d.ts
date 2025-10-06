@@ -60,7 +60,6 @@ export interface UnitObject extends GameObject {
     radiusNeedsUpdate?: boolean;
     targetRadius?: number;
     name?: string;
-    level?: number;
 }
 export interface ViewData {
     dynamics: {
@@ -69,6 +68,11 @@ export interface ViewData {
     units: {
         [key: string]: (number | string)[];
     };
+}
+export interface LeaderboardEntry {
+    id: number;
+    name: string;
+    length: number;
 }
 export interface GameMessage {
     type: string;
@@ -83,6 +87,9 @@ export interface FastUpdateMessage {
     x: number;
     y: number;
     t: number;
+    totalSnakes: number;
+    leaderboard: LeaderboardEntry[];
+    playerRank: number;
 }
 export interface PongMessage {
     type: 'pong';
@@ -107,6 +114,9 @@ export interface WorldInterface {
     GetUnit(id: number): UnitObject | null;
     GetView(d: UnitObject): ViewData;
     RandInt(n: number): number;
+    GetTotalSnakeCount(): number;
+    GetLeaderboard(limit: number): LeaderboardEntry[];
+    GetPlayerRank(playerId: number): number;
 }
 export interface PlayerManagerInterface {
     World: WorldInterface;

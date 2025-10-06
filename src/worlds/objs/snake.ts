@@ -46,7 +46,7 @@ class IOSnakeManager {
 
         return {
             radius,
-            spacing: Math.max(0.4 * radius, 0.5), // Reduced spacing for tighter segments
+            spacing: Math.max(0.15 * radius, 0.25), // Much tighter spacing between segments
             length: 64 * Math.log10(score / 256 + 1) + 3,
             turnSpeed: Math.max((360 - 100 * Math.log10(score / 150 + 1)) * Math.PI / 180, 45 * Math.PI / 180)
         };
@@ -199,20 +199,24 @@ class IOSnakeManager {
             // Use uniform spacing for all segments
             const spacing = description.spacing;
 
-            const curSpeed = head.boost === 1 ? this.fastSpeed * 0.75: this.slowSpeed;
-            let alpha = (dt * curSpeed) / spacing
-
-            // For boosting, ensure tail segments don't lag too much
-            if (head.boost === 1 && i > totalLength * 0.7) {
-                // Boost the alpha for tail segments to prevent them from lagging
-                alpha *= 1.2;
+            // Use same speed as head to maintain consistent spacing during boost
+            const curSpeed = head.boost === 1 ? this.fastSpeed : this.slowSpeed;
+            
+            // Calculate target position based on spacing (same method as head movement)
+            const targetX = previous.x - Math.cos(previous.angle) * spacing;
+            const targetY = previous.y - Math.sin(previous.angle) * spacing;
+            
+            // Move towards target at the same speed as head
+            const moveDistance = curSpeed * dt;
+            const dx = targetX - curr.x;
+            const dy = targetY - curr.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            
+            if (distance > 0) {
+                const moveRatio = Math.min(moveDistance / distance, 1);
+                curr.x += dx * moveRatio;
+                curr.y += dy * moveRatio;
             }
-
-            alpha = Math.max(TINY, Math.min(1 - TINY, alpha));
-
-            // Update position
-            curr.x = MLerp(curr.x, previous.x, alpha);
-            curr.y = MLerp(curr.y, previous.y, alpha);
 
             // Update angle to face the target
             let targetAngle = Math.atan2(previous.y - curr.y, previous.x - curr.x);
@@ -242,6 +246,7 @@ class IOSnakeManager {
                 p.angle = tail.angle;
                 p.bright = tail.bright + 1;
                 p.segmentIndex = i + 1; // Store segment index on creation (1-indexed)
+                p.spacing = description.spacing; // Ensure new segments have consistent spacing
 
                 head.parts.push(p);
 
@@ -291,7 +296,7 @@ class IOSnakeManager {
         head.ox = head.x;
         head.oy = head.y;
 
-        const speed = head.boost === 1 ? this.fastSpeed : head.speed;
+        const speed = head.boost === 1 ? this.fastSpeed : this.slowSpeed;
         head.x += Math.cos(head.angle) * speed * dt;
         head.y += Math.sin(head.angle) * speed * dt;
 

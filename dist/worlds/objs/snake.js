@@ -1,24 +1,15 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 function MLerp(start, end, amt) { return (1 - amt) * start + amt * end; }
-function lerp(a, b, t) {
-    return a + (b - a) * Math.max(0, Math.min(1, t));
-}
-function map(value, min, max, newMin, newMax) {
-    if (min === max) {
-        return newMin;
-    }
-    return lerp(newMin, newMax, (value - min) / (max - min));
-}
 const TINY = 0.0001;
 class IOSnakeManager {
     constructor(world) {
-        this.scale = 0.6;
+        // private scale = 0.6; // Unused variable
         this.slowSpeed = 150;
         this.fastSpeed = this.slowSpeed * 2;
         this.rad = 16;
-        this.slerp = 0.47;
-        this.LevelXP = 20;
+        // private slerp = 0.47; // Unused variable
+        // private LevelXP = 20; // Unused variable
         this.colors = [
             this.rgbToHex(255, 255, 255), // white
             this.rgbToHex(255, 182, 193), // light pink
@@ -40,30 +31,28 @@ class IOSnakeManager {
     // Helper function to describe snake properties based on score/EXP
     describeSnakeFromScore(score) {
         // Calculate radius based on level (similar to original logic but smoother)
-        const level = Math.floor(score / this.LevelXP);
         const baseRadius = Math.max(0.7 * Math.log10(score / 300 + 2), 0.5);
-        const radius = baseRadius * 32 * this.scale;
+        const radius = baseRadius * 32;
         return {
             radius,
-            spacingAtHead: Math.max(0.75 * radius, 0.5), // Minimum spacing for glow visibility
-            spacingAtTail: 2.5 * radius,
+            spacing: Math.max(0.4 * radius, 0.5), // Reduced spacing for tighter segments
             length: 64 * Math.log10(score / 256 + 1) + 3,
-            turnSpeed: Math.max((360 - 100 * Math.log10(score / 150 + 1)) * Math.PI / 180, 45 * Math.PI / 180),
-            level,
-            scale: this.scale
+            turnSpeed: Math.max((360 - 100 * Math.log10(score / 150 + 1)) * Math.PI / 180, 45 * Math.PI / 180)
         };
     }
-    CreateSnake(isAI, x, y, size = 10, name, initialTx, initialTy) {
-        // Use the size parameter to determine initial snake length
-        const initialLength = Math.max(3, size);
+    CreateSnake(isAI, x, y, size = 5, name, initialTx, initialTy) {
         let z = 1000;
         let c = this.world.RandInt(this.colors.length - 1);
         let head = this.world.CreateUnit(1, x, y, z, 0, this.rad * 2, this.rad * 2, this.rad, this.slowSpeed, c);
         head.isAI = isAI;
         head.isLead = true;
-        head.EXP = 10;
+        // Calculate EXP from desired size
+        // Formula: length = 64 * Math.log10(score / 256 + 1) + 3
+        // Reverse: score = 256 * (10^((length - 3) / 64) - 1)
+        const targetLength = size;
+        const calculatedEXP = 256 * (Math.pow(10, (targetLength - 3) / 64) - 1);
+        head.EXP = Math.max(10, calculatedEXP); // Minimum EXP of 10
         head.bright = 0;
-        head.level = Math.floor(head.EXP / this.LevelXP);
         // Ensure snake has proper initial direction toward target
         const targetX = initialTx !== undefined ? initialTx : x + 1;
         const targetY = initialTy !== undefined ? initialTy : y + 1;
@@ -81,15 +70,15 @@ class IOSnakeManager {
         }
         let bb = 0;
         const description = this.describeSnakeFromScore(head.EXP);
-        const actualSize = Math.floor(description.length);
+        const actualSize = Math.floor(description.length); // Calculate from EXP (which we set based on size)
         // Update head size based on initial EXP
         head.radius = description.radius;
         head.w = description.radius * 2;
         head.h = description.radius * 2;
-        for (let i = 0; i < Math.min(actualSize, initialLength); i++) {
+        for (let i = 0; i < actualSize; i++) {
             z--;
-            // Calculate initial spacing based on position in snake
-            const spacing = lerp(description.spacingAtHead, description.spacingAtTail, i / actualSize);
+            // Use uniform spacing for all segments
+            const spacing = description.spacing;
             const offsetX = x - (spacing * (i + 1));
             let p = this.world.CreateUnit(1, offsetX, y, z, 0, description.radius * 2, description.radius * 2, description.radius, this.slowSpeed, c);
             p.prevUnitId = i === 0 ? head.id : head.parts[i - 1].id;
@@ -167,24 +156,20 @@ class IOSnakeManager {
                 curr.w = targetRadius * 2;
                 curr.h = targetRadius * 2;
             }
-            // Calculate dynamic spacing based on position in snake
-            const spacing = map(i, 0, totalLength, description.spacingAtHead, description.spacingAtTail);
+            // Use uniform spacing for all segments
+            const spacing = description.spacing;
+            // Use consistent speed calculation to maintain uniform spacing during boost
             const curSpeed = head.boost === 1 ? this.fastSpeed * 0.75 : this.slowSpeed;
             let alpha = (dt * curSpeed) / spacing;
-            // For boosting, ensure tail segments don't lag too much
-            if (head.boost === 1 && i > totalLength * 0.7) {
-                // Boost the alpha for tail segments to prevent them from lagging
-                alpha *= 1.2;
-            }
+            // Remove the boost-specific alpha modification to maintain consistent spacing
+            // The uniform spacing from server will handle visual consistency
             alpha = Math.max(TINY, Math.min(1 - TINY, alpha));
             // Update position
             curr.x = MLerp(curr.x, previous.x, alpha);
             curr.y = MLerp(curr.y, previous.y, alpha);
-            // Update angle to face the target with smooth interpolation using slerp
+            // Update angle to face the target
             let targetAngle = Math.atan2(previous.y - curr.y, previous.x - curr.x);
-            const angleDiff = targetAngle - curr.angle;
-            const normalizedAngleDiff = ((angleDiff + Math.PI) % (2 * Math.PI)) - Math.PI;
-            curr.angle = curr.angle + normalizedAngleDiff * this.slerp;
+            curr.angle = targetAngle;
             curr.bright--;
             if (curr.bright < 0) {
                 curr.bright = 10;
@@ -206,6 +191,7 @@ class IOSnakeManager {
                 p.angle = tail.angle;
                 p.bright = tail.bright + 1;
                 p.segmentIndex = i + 1; // Store segment index on creation (1-indexed)
+                p.spacing = description.spacing; // Ensure new segments have consistent spacing
                 head.parts.push(p);
                 if ((p.bright ?? 0) >= 10) {
                     p.bright = 0;
@@ -261,15 +247,11 @@ class IOSnakeManager {
         }
     }
     CheckSnakeHeads(obj, dt) {
-        let tobj, tid;
+        let tobj; // tid removed as unused
         let res = this.CheckHeadHit(obj);
         if (res !== null) {
-            // Use tid to track the target that was hit
-            tid = res[0]; // res[0] is the object ID string
             obj.remove = 1;
             this.DoDeath(obj);
-            // Log collision with target ID for debugging
-            console.log(`Snake ${obj.id} hit target ${tid}`);
             return;
         }
         if (this.world.CD.CircleCollision(obj.x, obj.y, obj.radius, this.world.w / 2, this.world.h / 2, this.world.w / 2) === false) {
@@ -279,7 +261,7 @@ class IOSnakeManager {
         }
         let fres = this.world.CD.IsObjHitAreaOXYFaster(obj, "dynamic");
         if (fres !== null) {
-            tid = fres[0];
+            // tid = fres[0]; // Unused variable
             tobj = fres[1];
             tobj.remove = 1;
             this.AddEXP(obj, tobj.radius);

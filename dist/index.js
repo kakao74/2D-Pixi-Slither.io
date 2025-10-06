@@ -10,7 +10,7 @@ const express_1 = __importDefault(require("express"));
 const fs_1 = __importDefault(require("fs"));
 const msgpack_lite_1 = __importDefault(require("msgpack-lite"));
 const dotenv_1 = __importDefault(require("dotenv"));
-const timer_1 = __importDefault(require("./timer"));
+// import NTimer from './timer'; // Unused import
 const player_1 = __importDefault(require("./player"));
 // import AGAR from './worlds/agar-io';
 const slither_io_1 = __importDefault(require("./worlds/slither-io"));
@@ -38,7 +38,7 @@ console.log('hSERVER = ', hSERVER);
 //});//CORS ->https://socket.io/docs/v4/handling-cors/
 //***********************************************************************************************************************
 //***********************************************************************************************************************
-let MyTimer = null;
+// let MyTimer: any = null; // Unused variable
 let MyPM = null;
 let MyWorld = null;
 //let wsPORT = process.env.PORT || 3000;
@@ -47,8 +47,8 @@ const server = (0, http_1.createServer)(app); // Create an HTTP server from your
 const wss = new ws_1.WebSocket.Server({ server }); // Attach the WebSocket server to the existing HTTP server
 //const wss = new WebSocket.Server({ server: hSERVER  });
 //const wss = new WebSocket.WebSocketServer({ server: hSERVER });
-let PTime = 0;
-let PSendTime = 0;
+// let PTime: number = 0; // Unused variable
+// let PSendTime: number = 0; // Unused variable
 function heartbeat() { this.isAlive = true; }
 //***********************************************************************************************************************
 //***********************************************************************************************************************
@@ -64,7 +64,7 @@ async function Init() {
             res.send('Game Server!');
         });
         //Start Time and Player Manager if world is good
-        MyTimer = new timer_1.default(P0, P1, P2, P3, P4);
+        // MyTimer = new NTimer(P0, P1, P2, P3, P4); // Unused variable
         MyPM = new player_1.default(MyWorld); //Use World obj here
         wss.on('connection', (ws) => {
             console.log('Client connected');
@@ -154,45 +154,45 @@ async function Init() {
 }
 //***********************************************************************************************************************
 //***********************************************************************************************************************
-async function P0(dt) {
-    let hrstart = process.hrtime();
-    if (MyWorld) { //FASTEST Game Loop!
-        MyWorld.Process(dt); //Process world
-    }
-    let hrend = process.hrtime(hrstart);
-    //console.info('Execution time (hrtime): %ds %dms', hrend[0], hrend[1] / 1000000);
-    PTime = hrend[1] / 1000000; //to ms
-}
+// async function P0(dt: number): Promise<void> { // Unused function
+//     let hrstart = process.hrtime();
+//     if (MyWorld) {//FASTEST Game Loop!
+//         MyWorld.Process(dt);//Process world
+//     }
+//     let hrend = process.hrtime(hrstart);
+//     //console.info('Execution time (hrtime): %ds %dms', hrend[0], hrend[1] / 1000000);
+//     PTime = hrend[1] / 1000000; //to ms
+// }
 //***********************************************************************************************************************
 //***********************************************************************************************************************
-async function P1(_dt) {
-    let hrstart = process.hrtime();
-    if (MyWorld) { //Update Players only
-        MyPM.UpdatePlayers(); //Update Players (limited view area)
-    }
-    let hrend = process.hrtime(hrstart);
-    //console.info('Execution time (hrtime): %ds %dms', hrend[0], hrend[1] / 1000000);
-    PSendTime = hrend[1] / 1000000; //to ms
-}
+// async function P1(_dt: number): Promise<void> { // Unused function
+//     let hrstart = process.hrtime();
+//     if (MyWorld) {//Update Players only
+//         MyPM.UpdatePlayers();//Update Players (limited view area)
+//     }
+//     let hrend = process.hrtime(hrstart);
+//     //console.info('Execution time (hrtime): %ds %dms', hrend[0], hrend[1] / 1000000);
+//     PSendTime = hrend[1] / 1000000; //to ms
+// }
 //***********************************************************************************************************************
 //***********************************************************************************************************************
-async function P2(_dt) {
-    //console.log("P2 " + dt);//1 Second
-    let u = Object.keys(MyWorld.CD.GetAllObjs("unit")).length;
-    let f = Object.keys(MyWorld.CD.GetAllObjs("dynamic")).length;
-    console.log('Ptime: ' + PTime + " ms " + "SendTime: " + PSendTime + " ms "
-        + " Food: " + f + " Circles: " + u);
-}
+// async function P2(_dt: number): Promise<void> { // Unused function
+//     //console.log("P2 " + dt);//1 Second
+//     let u = Object.keys(MyWorld.CD.GetAllObjs("unit")).length;
+//     let f = Object.keys(MyWorld.CD.GetAllObjs("dynamic")).length;
+//     console.log('Ptime: ' + PTime + " ms " + "SendTime: " + PSendTime + " ms "
+//         + " Food: " + f + " Circles: " + u);
+// }
 //***********************************************************************************************************************
 //***********************************************************************************************************************
-async function P3(_dt) {
-    //console.log("P3 " + dt);//30 Seconds
-}
+// async function P3(_dt: number): Promise<void> { // Unused function
+//     //console.log("P3 " + dt);//30 Seconds
+// }
 //***********************************************************************************************************************
 //***********************************************************************************************************************
-async function P4(_dt) {
-    //console.log("P4 " + dt);//1 Minute
-}
+// async function P4(_dt: number): Promise<void> { // Unused function
+//     //console.log("P4 " + dt);//1 Minute
+// }
 //***********************************************************************************************************************
 //***********************************************************************************************************************
 Init().then(_r => { });

@@ -620,7 +620,7 @@ function onUpdate(pid: number, data: any, totalSnakes: number = 0, leaderboard: 
         if(!data.units.hasOwnProperty(id)) continue; 
         
       networkObject = data.units[id];
-      const {type, x, y, z, width, height, angle, radius, colorIndex, isLead, boost, segmentIndex, prevUnitId, name} = decodeNetworkUnit(networkObject);
+      const {type, x, y, z, width, height, angle, radius, colorIndex, isLead, boost, segmentIndex, prevUnitId, name, spacing} = decodeNetworkUnit(networkObject);
 
       if (GameState.gameObjects.units.hasOwnProperty(id)) {
           let snakeObject = GameState.gameObjects.units[id];
@@ -653,37 +653,36 @@ function onUpdate(pid: number, data: any, totalSnakes: number = 0, leaderboard: 
               snakeObject.GLOW.tx = x;
               snakeObject.GLOW.ty = y;
           } else {
-              // For non-lead segments, set the width to the distance between the previous segment and this one
+              // For ALL body segments, use completely uniform spacing from server
+              // This ensures consistent appearance during boost and normal movement
               let prevSegment = null;
               if (data.units.hasOwnProperty(prevUnitId)) {
                   prevSegment = decodeNetworkUnit(data.units[prevUnitId]);
               }
               
               if (prevSegment) {
-                  let dist = Math.hypot(prevSegment.x - x, prevSegment.y - y);
                   snakeObject.tx = prevSegment.x;
                   snakeObject.ty = prevSegment.y;
                   
-                  // Set width to distance, height to standard height
-                  // This creates a stretched effect between segments
+                  // Use consistent spacing value from server for ALL body segments
+                  // This prevents sudden spacing changes during boost
+                  const segmentSpacing = spacing > 0 ? spacing : radius * 0.4;
+                  const consistentWidth = width + segmentSpacing;
+                  
                   snakeObject.targetWidth = undefined;
                   snakeObject.targetHeight = undefined;
-                  if(prevSegment.isLead) {
-                      snakeObject.width = width;
-                      snakeObject.height = height;
-                  } else {
-                      snakeObject.width = width + dist - (radius / 4);
-                      snakeObject.GLOW.width = (width + Math.max(dist, width)) * 2;
-                      snakeObject.height = height;
+                  
+                  // Apply uniform spacing to ALL body segments (not just non-head followers)
+                  snakeObject.width = consistentWidth;
+                  snakeObject.GLOW.width = consistentWidth * 2;
+                  snakeObject.height = height;
 
-                      // Update anchor based on current width to avoid jarring changes
-                      if (snakeObject.width > radius) {
-                          const farPivot = snakeObject.width - radius;
-                          snakeObject.anchor.set(farPivot / snakeObject.width, 0.5);
-                      }
+                  // Update anchor based on consistent width for all segments
+                  if (snakeObject.width > radius) {
+                      const farPivot = snakeObject.width - radius;
+                      snakeObject.anchor.set(farPivot / snakeObject.width, 0.5);
                   }
               } else {
-                  console.log('not found')
                   // If no previous segment found, fallback to default width
                   snakeObject.targetWidth = width;
                   snakeObject.targetHeight = height;

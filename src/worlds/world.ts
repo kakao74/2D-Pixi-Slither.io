@@ -78,7 +78,7 @@ class IOWorld implements WorldInterface {
             obj.w, obj.h, obj.radius, obj.angle,
             Math.floor(obj.hp), Math.floor(obj.max_hp), Math.floor(obj.tx), Math.floor(obj.ty),
             obj.color,obj.isLead ? 1 : 0, obj.boost, obj.segmentIndex ?? 0, obj.prevUnitId === undefined ? -1 : obj.prevUnitId,
-            obj.name ?? ""];
+            obj.name ?? "", obj.spacing ?? 0];
     }
     //------------------------------------------------------------------------------------------------------------------
     //------------------------------------------------------------------------------------------------------------------

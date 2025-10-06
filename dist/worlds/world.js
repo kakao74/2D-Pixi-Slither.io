@@ -81,7 +81,7 @@ class IOWorld {
             obj.w, obj.h, obj.radius, obj.angle,
             Math.floor(obj.hp), Math.floor(obj.max_hp), Math.floor(obj.tx), Math.floor(obj.ty),
             obj.color, obj.isLead ? 1 : 0, obj.boost, obj.segmentIndex ?? 0, obj.prevUnitId === undefined ? -1 : obj.prevUnitId,
-            obj.name ?? ""];
+            obj.name ?? "", obj.spacing ?? 0];
     }
     //------------------------------------------------------------------------------------------------------------------
     //------------------------------------------------------------------------------------------------------------------
@@ -133,6 +133,60 @@ class IOWorld {
     }
     PlayerSpawn(_d) {
         // Override in subclasses
+    }
+    GetTotalSnakeCount() {
+        // Default implementation - count all lead units
+        let count = 0;
+        const units = this.CD.GetAllObjs("unit");
+        for (const [, unit] of Object.entries(units)) {
+            if (unit.isLead) {
+                count++;
+            }
+        }
+        return count;
+    }
+    GetLeaderboard(limit = 10) {
+        // Get all snake heads with their lengths
+        const snakes = [];
+        const units = this.CD.GetAllObjs("unit");
+        for (const [, unit] of Object.entries(units)) {
+            const snakeUnit = unit;
+            if (snakeUnit.isLead) {
+                snakes.push({
+                    id: snakeUnit.id,
+                    name: snakeUnit.name || "Player",
+                    length: snakeUnit.parts.length + 1 // +1 for head
+                });
+            }
+        }
+        // Sort by length descending (longest first)
+        snakes.sort((a, b) => b.length - a.length);
+        // Return top N
+        return snakes.slice(0, limit);
+    }
+    GetPlayerRank(playerId) {
+        // Get all snake heads with their lengths
+        const snakes = [];
+        const units = this.CD.GetAllObjs("unit");
+        let playerLength = 0;
+        for (const [, unit] of Object.entries(units)) {
+            const snakeUnit = unit;
+            if (snakeUnit.isLead) {
+                const length = snakeUnit.parts.length + 1; // +1 for head
+                snakes.push({ id: snakeUnit.id, length });
+                if (snakeUnit.id === playerId) {
+                    playerLength = length;
+                }
+            }
+        }
+        // Count how many snakes have longer length than player
+        let rank = 1;
+        for (const snake of snakes) {
+            if (snake.id !== playerId && snake.length > playerLength) {
+                rank++;
+            }
+        }
+        return rank;
     }
 }
 exports.default = IOWorld;

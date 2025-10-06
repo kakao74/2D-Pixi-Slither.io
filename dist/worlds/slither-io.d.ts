@@ -10,6 +10,7 @@ declare class SlitherWorld extends IOWorld {
     DeathFood(parts: any[]): void;
     CheckSnakes(): void;
     SnakeHeads(): number;
+    GetTotalSnakeCount(): number;
     MoveTXY(x: number, y: number, tx: number, ty: number, speed: number, dt: number): [number, number];
     Process(dt: number): void;
 }

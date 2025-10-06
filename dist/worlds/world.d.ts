@@ -18,6 +18,9 @@ declare class IOWorld implements WorldInterface {
     WProcess(dt: number): void;
     Process(dt: number): void;
     PlayerSpawn(_d: PlayerData): void;
+    GetTotalSnakeCount(): number;
+    GetLeaderboard(limit?: number): any[];
+    GetPlayerRank(playerId: number): number;
 }
 export default IOWorld;
 //# sourceMappingURL=world.d.ts.map

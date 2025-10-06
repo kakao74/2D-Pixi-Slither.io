@@ -102,6 +102,9 @@ class PlayerManager {
                             let d = { type: 'fast_update', view: View, pid: pkey, id: PD.uid,
                                 x: Math.floor(unit.x), y: Math.floor(unit.y), //current location
                                 t: Date.now(),
+                                totalSnakes: this.World.GetTotalSnakeCount(), // Total snakes in the world
+                                leaderboard: this.World.GetLeaderboard(10), // Top 10 snakes
+                                playerRank: this.World.GetPlayerRank(PD.uid), // Exact player rank
                             };
                             //console.log(JSON.stringify(d))
                             //console.time('Pack');
