@@ -334,11 +334,40 @@ class IOSnakeManager {
             this.AddEXP(obj, tobj.radius);
         }
 
-        if(obj.boost === 1 && obj.EXP > 100) {
-            obj.boost_time += dt;
-            if(obj.boost_time >= obj.boost_cooldown) {
-                this.LoseEXP(obj, 1);
-                obj.boost_time = 0;
+        if(obj.boost === 1) {
+            const currentLength = obj.parts ? obj.parts.length : 0;
+            
+            // Only boost if length is >= 11
+            if(currentLength >= 11) {
+                obj.boost_time += dt;
+                // Reduce length every 0.15 seconds (faster than before)
+                if(obj.boost_time >= 0.15) {
+                    // Reduce length by removing segments directly (no food drops during boost)
+                    if(obj.parts && obj.parts.length > 0) {
+                        // Remove the last segment (tail)
+                        const tail = obj.parts.pop();
+                        if(tail) {
+                            tail.remove = 1;
+                        }
+                        
+                        // Reduce EXP slightly to keep snake size in sync, but don't call LoseEXP 
+                        // (which creates food) - just reduce the EXP value directly
+                        const expReduction = Math.max(5, obj.EXP * 0.02); // Lose 2% of EXP or minimum 5
+                        obj.EXP = Math.max(obj.EXP - expReduction, 0);
+                        
+                        // Update radius based on new EXP
+                        const description = this.describeSnakeFromScore(obj.EXP);
+                        obj.radius = description.radius;
+                        obj.w = description.radius * 2;
+                        obj.h = description.radius * 2;
+                        obj.radiusNeedsUpdate = true;
+                        obj.targetRadius = description.radius;
+                    }
+                    obj.boost_time = 0;
+                }
+            } else {
+                // Not long enough to boost anymore, disable it
+                obj.boost = 0;
             }
         }
     }

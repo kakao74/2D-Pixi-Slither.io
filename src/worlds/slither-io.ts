@@ -171,7 +171,14 @@ class SlitherWorld extends IOWorld {
                         //console.log([d.x, d.tx, d.y, d.ty]);
                         (d as any).t_current = 0; (d as any).t_time = this.RandInt(5) + 2;
                         //console.log("moving...")
-                        (d as any).boost = this.RandInt(2);//random boost
+                        
+                        // AI boost logic: only boost if snake is long enough (>= 11 segments)
+                        const currentLength = d.parts ? d.parts.length : 0;
+                        if(currentLength >= 11) {
+                            (d as any).boost = this.RandInt(2);//random boost only if long enough
+                        } else {
+                            (d as any).boost = 0; // Can't boost, not long enough
+                        }
                         //console.log(d.boost)
                     }
                     (d as any).t_current += dt;

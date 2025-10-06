@@ -160,7 +160,7 @@ export function setupWebsocket(onUpdate: (id: number, view: any, totalSnakes?: n
     }, 1000); // Send a ping every few seconds
 
     GameState.socket.onopen = (event: any) => {
-        console.log('socket open: ', event);
+        console.log('Connected to game server');
 
         // Send player name to server when connection opens
         if ((window as any).playerName) {
@@ -169,6 +169,14 @@ export function setupWebsocket(onUpdate: (id: number, view: any, totalSnakes?: n
                 name: (window as any).playerName
             }));
         }
+    };
+
+    GameState.socket.onerror = (error: any) => {
+        console.error('WebSocket error:', error);
+    };
+
+    GameState.socket.onclose = (event: any) => {
+        console.log('WebSocket closed:', event);
     };
 
     GameState.socket.onmessage = async (event: any) => {

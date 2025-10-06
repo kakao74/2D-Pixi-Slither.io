@@ -9,12 +9,8 @@ import { Food } from "./object/food";
 export const app = new Application();
 
 (async () => {
-  /*
-    // Initialize the application
-    await app.init({ background: "#1099bb", resizeTo: window });
-    // Append the application canvas to the document body
-    document.getElementById("pixi-container")!.appendChild(app.canvas);
-  */
+  // Initialize the application (this will be done in gameStart, but we need to ensure it's ready)
+  // The actual initialization happens in setupGraphic() function
   const canvas = document.getElementById('gameCanvas') as HTMLCanvasElement;
   const ctx = canvas?.getContext('2d');
 
@@ -58,8 +54,6 @@ export const app = new Application();
       (window as any).playerName = nameInput.value.trim();
       await gameStart();
       (document.getElementById("startup") as HTMLElement).style.display = "none";
-      (document.getElementById("gameCanvas") as HTMLElement).style.display = "none";
-      (document.getElementById("start_btn_containeer") as HTMLElement).style.display = "none";
       (document.getElementById("app") as HTMLElement).style.display = "flex";
     }
   });

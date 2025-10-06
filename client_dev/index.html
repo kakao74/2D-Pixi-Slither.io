@@ -6,16 +6,36 @@
     <link rel="icon" type="image/png" href="/favicon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="/style.css">
-    <title>Gokul</title>
+    <title>Slither</title>
 </head>
 
 <body>
     <div id="startup">
-        <canvas id="gameCanvas" width="1024" height="1024"></canvas>
-    </div>
-    <div id="start_btn_containeer">
-        <button id="bstart">Start</button>
-        <input type="text" id="fname" name="fname">
+        <div class="hero-section">
+            <div class="hero-content">
+                <h1 class="game-title">Slither.io</h1>
+                <p class="game-subtitle">Experience the classic snake game with modern graphics and smooth gameplay</p>
+                <div class="start-form">
+                    <input type="text" id="fname" name="fname" placeholder="Enter your name" class="name-input">
+                    <button id="bstart" class="start-button">Start Game</button>
+                </div>
+                <div class="game-features">
+                    <div class="feature">
+                        <span class="feature-icon">🎮</span>
+                        <span>Classic Gameplay</span>
+                    </div>
+                    <div class="feature">
+                        <span class="feature-icon">⚡</span>
+                        <span>Fast & Smooth</span>
+                    </div>
+                    <div class="feature">
+                        <span class="feature-icon">🏆</span>
+                        <span>Leaderboard</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <canvas id="gameCanvas" width="1024" height="1024" style="display: none;"></canvas>
     </div>
     <div id="app">
         <div id="pixi-container"></div>
