@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-function MLerp(start, end, amt) { return (1 - amt) * start + amt * end; }
+// function MLerp(start: number, end: number, amt: number)  { return (1-amt)*start+amt*end } // Unused function
 const TINY = 0.0001;
 class IOSnakeManager {
     constructor(world) {
@@ -31,11 +31,12 @@ class IOSnakeManager {
     // Helper function to describe snake properties based on score/EXP
     describeSnakeFromScore(score) {
         // Calculate radius based on level (similar to original logic but smoother)
+        // const level = Math.floor(score / this.LevelXP); // Unused variable
         const baseRadius = Math.max(0.7 * Math.log10(score / 300 + 2), 0.5);
         const radius = baseRadius * 32;
         return {
             radius,
-            spacing: Math.max(0.4 * radius, 0.5), // Reduced spacing for tighter segments
+            spacing: Math.max(0.15 * radius, 0.25), // Much tighter spacing between segments
             length: 64 * Math.log10(score / 256 + 1) + 3,
             turnSpeed: Math.max((360 - 100 * Math.log10(score / 150 + 1)) * Math.PI / 180, 45 * Math.PI / 180)
         };
@@ -158,15 +159,21 @@ class IOSnakeManager {
             }
             // Use uniform spacing for all segments
             const spacing = description.spacing;
-            // Use consistent speed calculation to maintain uniform spacing during boost
-            const curSpeed = head.boost === 1 ? this.fastSpeed * 0.75 : this.slowSpeed;
-            let alpha = (dt * curSpeed) / spacing;
-            // Remove the boost-specific alpha modification to maintain consistent spacing
-            // The uniform spacing from server will handle visual consistency
-            alpha = Math.max(TINY, Math.min(1 - TINY, alpha));
-            // Update position
-            curr.x = MLerp(curr.x, previous.x, alpha);
-            curr.y = MLerp(curr.y, previous.y, alpha);
+            // Use same speed as head to maintain consistent spacing during boost
+            const curSpeed = head.boost === 1 ? this.fastSpeed : this.slowSpeed;
+            // Calculate target position based on spacing (same method as head movement)
+            const targetX = previous.x - Math.cos(previous.angle) * spacing;
+            const targetY = previous.y - Math.sin(previous.angle) * spacing;
+            // Move towards target at the same speed as head
+            const moveDistance = curSpeed * dt;
+            const dx = targetX - curr.x;
+            const dy = targetY - curr.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            if (distance > 0) {
+                const moveRatio = Math.min(moveDistance / distance, 1);
+                curr.x += dx * moveRatio;
+                curr.y += dy * moveRatio;
+            }
             // Update angle to face the target
             let targetAngle = Math.atan2(previous.y - curr.y, previous.x - curr.x);
             curr.angle = targetAngle;
@@ -235,13 +242,20 @@ class IOSnakeManager {
         head.angle = this.SimpleRotateTo(head.angle, targetAngle, rotationSpeed);
         head.ox = head.x;
         head.oy = head.y;
-        const speed = head.boost === 1 ? this.fastSpeed : head.speed;
+        const speed = head.boost === 1 ? this.fastSpeed : this.slowSpeed;
         head.x += Math.cos(head.angle) * speed * dt;
         head.y += Math.sin(head.angle) * speed * dt;
         this.moveTo(head, dt);
     }
     DoDeath(obj) {
-        this.world.DeathFood(obj.parts);
+        // Debug: Log snake death info
+        console.log(`Snake ${obj.id} died with ${obj.parts ? obj.parts.length : 0} parts`);
+        if (obj.parts && obj.parts.length > 0) {
+            this.world.DeathFood(obj.parts);
+        }
+        else {
+            console.log(`Warning: Snake ${obj.id} has no parts to create food from`);
+        }
         for (let i = 0; i < obj.parts.length; i++) {
             obj.parts[i].remove = 1;
         }
@@ -266,11 +280,38 @@ class IOSnakeManager {
             tobj.remove = 1;
             this.AddEXP(obj, tobj.radius);
         }
-        if (obj.boost === 1 && obj.EXP > 100) {
-            obj.boost_time += dt;
-            if (obj.boost_time >= obj.boost_cooldown) {
-                this.LoseEXP(obj, 1);
-                obj.boost_time = 0;
+        if (obj.boost === 1) {
+            const currentLength = obj.parts ? obj.parts.length : 0;
+            // Only boost if length is >= 11
+            if (currentLength >= 11) {
+                obj.boost_time += dt;
+                // Reduce length every 0.15 seconds (faster than before)
+                if (obj.boost_time >= 0.15) {
+                    // Reduce length by removing segments directly (no food drops during boost)
+                    if (obj.parts && obj.parts.length > 0) {
+                        // Remove the last segment (tail)
+                        const tail = obj.parts.pop();
+                        if (tail) {
+                            tail.remove = 1;
+                        }
+                        // Reduce EXP slightly to keep snake size in sync, but don't call LoseEXP 
+                        // (which creates food) - just reduce the EXP value directly
+                        const expReduction = Math.max(5, obj.EXP * 0.02); // Lose 2% of EXP or minimum 5
+                        obj.EXP = Math.max(obj.EXP - expReduction, 0);
+                        // Update radius based on new EXP
+                        const description = this.describeSnakeFromScore(obj.EXP);
+                        obj.radius = description.radius;
+                        obj.w = description.radius * 2;
+                        obj.h = description.radius * 2;
+                        obj.radiusNeedsUpdate = true;
+                        obj.targetRadius = description.radius;
+                    }
+                    obj.boost_time = 0;
+                }
+            }
+            else {
+                // Not long enough to boost anymore, disable it
+                obj.boost = 0;
             }
         }
     }

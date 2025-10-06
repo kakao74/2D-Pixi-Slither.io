@@ -52,9 +52,12 @@ export const app = new Application();
     if (nameInput && nameInput.value.trim()) {
       // Store the player name for the game
       (window as any).playerName = nameInput.value.trim();
-      await gameStart();
+      
+      // Show loading screen
       (document.getElementById("startup") as HTMLElement).style.display = "none";
-      (document.getElementById("app") as HTMLElement).style.display = "flex";
+      (document.getElementById("loading") as HTMLElement).style.display = "flex";
+      
+      await gameStart();
     }
   });
 })();

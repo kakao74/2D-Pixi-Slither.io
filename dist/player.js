@@ -54,8 +54,18 @@ class PlayerManager {
                 if (unit !== null) {
                     unit.tx = unit.x - tx; //offset direction
                     unit.ty = unit.y - ty; //offset direction
-                    if (mouse === 0 || mouse === 1) {
-                        unit.boost = mouse;
+                    // Check boost requirements: minimum length of 11 segments
+                    if (mouse === 1) { // Trying to boost
+                        const currentLength = unit.parts ? unit.parts.length : 0;
+                        if (currentLength >= 11) {
+                            unit.boost = 1;
+                        }
+                        else {
+                            unit.boost = 0; // Can't boost, not long enough
+                        }
+                    }
+                    else {
+                        unit.boost = 0; // Not boosting
                     }
                     //                    tx = tx - 512; ty = ty - 512;//based on center of screen
                     //unit.tx = tx; unit.ty = ty;

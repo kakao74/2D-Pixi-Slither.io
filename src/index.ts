@@ -36,7 +36,7 @@ console.log('hSERVER = ', hSERVER);
 //});//CORS ->https://socket.io/docs/v4/handling-cors/
 //***********************************************************************************************************************
 //***********************************************************************************************************************
-let MyTimer: any = null;
+let _MyTimer: any = null;
 let MyPM: any = null;
 let MyWorld: any = null;
 //let wsPORT = process.env.PORT || 3000;
@@ -65,7 +65,7 @@ async function Init(): Promise<void> {
         });
 
         //Start Time and Player Manager if world is good
-        MyTimer = new NTimer(P0, P1, P2, P3, P4);
+        _MyTimer = new NTimer(P0, P1, P2, P3, P4);
         MyPM = new PM(MyWorld);//Use World obj here
 
         wss.on('connection', (ws: WebSocket) => {

@@ -25,19 +25,13 @@ import { Texture, Sprite, Container, TilingSprite, Graphics, TextStyle, Text, Ni
 import { initAssets, leftEyeTexture, rightEyeTexture } from "./asset";
 import { setupWebsocket } from "./websocket";
 import { app as PIXIApp } from "./main";
-import { rgbToHex, randomNumber, adjustBrightnessRGB, drawDebugRect, calculateLerp, drawDebugCircle, decodeNetworkUnit } from "./utils";
+import { rgbToHex, drawDebugRect, calculateLerp, drawDebugCircle, decodeNetworkUnit } from "./utils";
 import {
-    headTexture,
     eyesTexture,
-    eyeTexture,
-    bodyTexture1,
-    // bodyTexture2,
-    // bodyTexture3,
     bodyTexture4,
     bkTexture,
     glowTexture
 } from "./asset";
-import { HEAD_EYES } from "./constant";
 import { GameState } from "./gameState";
 
 function RandInt(n: number) { return Math.floor(Math.random() * n); }
@@ -302,9 +296,15 @@ export function process() {
     CleanGroupObj(GameState.gameObjects.units, GameState.prevData.units);
   }
 
-  // 4) Camera (unchanged)
-  GameState.PIXICam.pivot.x = calculateLerp(GameState.PIXICam.pivot.x, GameState.pivotX, 0.1);
-  GameState.PIXICam.pivot.y = calculateLerp(GameState.PIXICam.pivot.y, GameState.pivotY, 0.1);
+  // 4) Camera - Skip interpolation on first update to prevent shaking
+  if (!GameState.cameraInitialized) {
+    GameState.PIXICam.pivot.x = GameState.pivotX;
+    GameState.PIXICam.pivot.y = GameState.pivotY;
+    GameState.cameraInitialized = true;
+  } else {
+    GameState.PIXICam.pivot.x = calculateLerp(GameState.PIXICam.pivot.x, GameState.pivotX, 0.1);
+    GameState.PIXICam.pivot.y = calculateLerp(GameState.PIXICam.pivot.y, GameState.pivotY, 0.1);
+  }
   GameState.PIXICam.x = PIXIApp.screen.width / 2;
   GameState.PIXICam.y = PIXIApp.screen.height / 2;
 
@@ -502,50 +502,77 @@ function updateLeaderboard(leaderboard: any[], playerHeadId: string): void {
 
 // ---- Main update -------------------------------------------------------------
 
+function showGameWorld() {
+    // Hide loading screen and show game world
+    (document.getElementById("loading") as HTMLElement).style.display = "none";
+    (document.getElementById("app") as HTMLElement).style.display = "flex";
+    
+    // Show leaderboard
+    if (GameState.gData["leaderboard_container"]) {
+        GameState.gData["leaderboard_container"].style.display = "block";
+    }
+}
+
 export function returnToStartupScreen() {
+    // Store player ID before resetting
+    const playerId = GameState.mySnakeId.toString();
+    
     // Close the websocket connection
     if (GameState.socket) {
         GameState.socket.close();
         GameState.socket = null;
     }
     
-    // Reset game state
+    // Reset only player-specific state, keep game world state
     GameState.mySnakeId = -1;
     GameState.mySnakeH = null;
-    GameState.prevData = null;
-    GameState.firstServerTimestamp = 0;
-    GameState.gameStart = 0;
-    GameState.gameUpdates = [];
+    GameState.cameraInitialized = false;
     
-    // Clear game objects
-    GameState.gameObjects.units = {};
-    GameState.gameObjects.dynamics = {};
-    GameState.gameObjects.statics = {};
+    // Clear only player's game objects, keep world objects
+    // This allows rejoining the same game world
+    if (GameState.prevData && playerId !== "-1") {
+        // Remove only the player's snake from the display
+        if (GameState.gameObjects.units[playerId]) {
+            const playerSnake = GameState.gameObjects.units[playerId];
+            if (playerSnake.parent) {
+                playerSnake.parent.removeChild(playerSnake);
+            }
+            if (playerSnake.destroy) {
+                playerSnake.destroy();
+            }
+            delete GameState.gameObjects.units[playerId];
+        }
+    }
     
     // Hide game screen and show startup screen
     (document.getElementById("app") as HTMLElement).style.display = "none";
     (document.getElementById("startup") as HTMLElement).style.display = "block";
     
-    // Clear the name input for a fresh start
+    // Hide leaderboard
+    if (GameState.gData["leaderboard_container"]) {
+        GameState.gData["leaderboard_container"].style.display = "none";
+    }
+    
+    // Keep the name input filled for easy rejoin
     const nameInput = document.getElementById("fname") as HTMLInputElement;
-    if (nameInput) {
+    if (nameInput && !nameInput.value) {
+        // Only clear if empty, otherwise keep the name for rejoin
         nameInput.value = "";
     }
     
-    // Reset start button state
+    // Enable start button for rejoin
     const startButton = document.getElementById("bstart") as HTMLButtonElement;
     if (startButton) {
-        startButton.disabled = true;
-        startButton.style.opacity = "0.5";
+        startButton.disabled = false;
+        startButton.style.opacity = "1";
     }
     
-    console.log("Returned to startup screen");
+    console.log("Returned to startup screen - ready for rejoin");
 }
 
 function onUpdate(pid: number, data: any, totalSnakes: number = 0, leaderboard: any[] = [], playerRank: number = 0){
     GameState.prevData = data;
     let networkObject, id;
-    let fadeSpeed = 0.1;
 
     // Check if player's snake is still alive
     if (GameState.mySnakeId !== -1 && !data.units.hasOwnProperty(GameState.mySnakeId.toString())) {
@@ -583,7 +610,7 @@ function onUpdate(pid: number, data: any, totalSnakes: number = 0, leaderboard: 
     for (id in data.dynamics) {
         if (data.dynamics.hasOwnProperty(id)) {
             networkObject = data.dynamics[id];
-            const [type, x, y, z, r, width, height, radius, angle, color] = networkObject;
+            const [type, x, y, z, , width, height, , , color] = networkObject;
 
             if (GameState.gameObjects.dynamics.hasOwnProperty(id)) {
                 let foodObject = GameState.gameObjects.dynamics[id];
@@ -662,7 +689,6 @@ function onUpdate(pid: number, data: any, totalSnakes: number = 0, leaderboard: 
         }
     }
 
-    let glowSpeed = 0.1;
     for (id in data.units) {
         if(!data.units.hasOwnProperty(id)) continue; 
         
@@ -799,6 +825,9 @@ function onUpdate(pid: number, data: any, totalSnakes: number = 0, leaderboard: 
               GameState.pivotY = y;
               GameState.mySnakeH = networkObject;
               GameState.mySnakeId = pid;
+              
+              // Show game world when player snake is created
+              showGameWorld();
               
               // Calculate and update snake length display
               const snakeLength = calculateSnakeLength(id, data.units);
@@ -1297,7 +1326,12 @@ async function setupGraphic() {
 }
 
 export async function gameStart() {
-    await initAssets();
-    await setupGraphic();
+    // Only setup graphics if not already initialized
+    if (!GameState.PIXICam || GameState.PIXICam.children.length === 0) {
+        await initAssets();
+        await setupGraphic();
+    }
+    
+    // Always setup websocket for rejoin
     setupWebsocket(onUpdate);
 }

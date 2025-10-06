@@ -43,5 +43,6 @@ export const GameState = {
     camera: {
         x: 0,
         y: 0
-    }
+    },
+    cameraInitialized: false
 }
